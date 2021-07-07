@@ -1,0 +1,7 @@
+area,numero_estudiantes,porc_infantil,porc_juvenil,porc_prepro,c_escuela1,c_escuela2,c_escuela3,cap_escuela1,cap_escuela2,cap_escuela3
+1,450,32,38,30,300,0,700,900,1100,1000
+2,600,37,28,35,null,400,500,900,1100,1000
+3,550,30,32,38,600,300,200,900,1100,1000
+4,350,28,40,32,200,500,null,900,1100,1000
+5,500,39,34,27,0,null,400,900,1100,1000
+6,450,34,28,38,500,300,0,900,1100,1000
