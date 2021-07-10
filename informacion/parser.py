@@ -34,12 +34,6 @@ class Parser:
                 i + 1: int(capacidades[i])
                 for i in range(3)
             }
-    def construir_datos_d(self):
-        '''
-        Genera dos nuevos sets de datos para la pregunta (D)
-        '''
-        #dejar los resultados en un atributo para poder llevarlos a parametros
-        pass #cambiar los costos para las zonas a 'null'
 
 def write_latex(modelo) -> str:
     '''
