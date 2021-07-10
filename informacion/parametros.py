@@ -10,6 +10,11 @@ parser = Parser('informacion/datos.csv')
 # A: Areas
 A = dict()
 for k,v in parser.areas.items():
+    '''
+    Genera listas de enteros desde 1 a R, donde R es la cantidad de alumnos
+    de cada categoria. Las listas luego son añadidas como valores del diccionario
+    A, indexadas por área geográfica (k).
+    '''
     A[k] = dict()
     # Infantiles
     A[k]['inf'] = [
@@ -41,6 +46,12 @@ Q = list(parser.escuelas.values())
 C = dict()
 K = dict()
 for k,v in parser.areas.items():
+    '''
+    Genera C a partir de los costos para cada tupla (área, escuela) y cuando
+    no existe el costo (porque la asignación es infactible), añade esa tupla
+    al conjunto K.
+    '''
+    # Nota: cambiar de diccionario a tupla para mejor consistencia con el modelo.
     C[k] = dict()
     K[k] = list()
     try:
