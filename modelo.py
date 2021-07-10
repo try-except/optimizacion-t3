@@ -1,5 +1,5 @@
 from gurobipy import Model, GRB, quicksum, GurobiError
-from informacion.parametros import A, E, Q, C, K
+from informacion.parametros import A, E, Q, C, K, K_i, K_ii
 from informacion.parser import write_latex
 
 ################
@@ -126,8 +126,9 @@ modelo_a.setObjective(
     )
 )
 
+print('\nMODELO A\n')
 modelo_a.optimize()
-write_latex(modelo_a.getVars(), modelo_a.objVal)
+write_latex(modelo_a)
 
 #===============================================================================
 
@@ -263,9 +264,9 @@ modelo_c.setObjective(
     )
 )
 
-
+print('\nMODELO C\n')
 modelo_c.optimize()
-write_latex(modelo_c.getVars(), modelo_c.objVal)
+write_latex(modelo_c)
 
 #===============================================================================
 
@@ -429,6 +430,7 @@ for e in E:
         )
 
 # Asignaciones imposibles
+#=[Opción 1]=
 for a in A.keys():
     for e in K[a]:
         modelo_d1.addConstr(
@@ -442,6 +444,19 @@ for a in A.keys():
         )
 
 for a in A.keys():
+    for e in K_i[a]:
+        modelo_d1.addConstr(
+            quicksum(
+                quicksum(
+                    x1[a, j][j, i, e] for i in A[a][j]
+                )
+                for j in ['inf', 'juv', 'pro']
+            ) == 0,
+            name = 'R6'
+        )
+
+#=[Opción 2]=
+for a in A.keys():
     for e in K[a]:
         modelo_d2.addConstr(
             quicksum(
@@ -451,6 +466,18 @@ for a in A.keys():
                 for j in ['inf', 'juv', 'pro']
             ) == 0,
             name = 'R5'
+        )
+
+for a in A.keys():
+    for e in K_ii[a]:
+        modelo_d2.addConstr(
+            quicksum(
+                quicksum(
+                    x2[a, j][j, i, e] for i in A[a][j]
+                )
+                for j in ['inf', 'juv', 'pro']
+            ) == 0,
+            name = 'R6'
         )
 
 # ********************
@@ -486,7 +513,10 @@ modelo_d2.setObjective(
     )
 )
 
+print('\nMODELO D1\n')
 modelo_d1.optimize()
-
+print('\nMODELO D2\n')
 modelo_d2.optimize()
-#write_latex(modelo_d.getVars(), modelo_d.objVal)
+
+write_latex(modelo_d1)
+write_latex(modelo_d2)
