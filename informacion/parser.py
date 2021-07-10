@@ -30,14 +30,47 @@ class Parser:
                 i + 1: int(capacidades[i])
                 for i in range(3)
             }
-    # def generar_grupos(self):
-    #     for k, v in self.areas.items():
-    #         self.areas[k]['inf'] = [
-    #             x for x in range(self.areas[k]['inf'] * self.areas[k]['n_est'] // 100)
-    #         ]
-    #         self.areas[k]['juv'] = [
-    #             x for x in range(self.areas[k]['juv'] * self.areas[k]['n_est'] // 100)
-    #         ]
-    #         self.areas[k]['pro'] = [
-    #             x for x in range(self.areas[k]['pro'] * self.areas[k]['n_est'] // 100)
-    #         ]
+
+def write_latex(variables : list) -> str:
+    ## Ordenamos los datos en un diccionario
+    clean_vars = {
+        j: {
+            i: {
+                'inf': 0,#list(),
+                'juv': 0,#list(),
+                'pro': 0,#list()
+            }
+            for i in range(1, 4)
+        }
+        for j in range(1, 7)
+    }
+    for var in variables:
+        if not var.x: continue
+        area = int(var.varName[1])
+        cat, alumno, escuela = var.varName[3:-1].split(',')
+        #clean_vars[area][int(escuela)][cat].append(alumno)
+        clean_vars[area][int(escuela)][cat] += 1
+        
+    ## Escribimos el LaTeX string
+    output_latex = '\\documentclass{standalone}\n\\usepackage[utf8]{inputenc}'
+    output_latex += '\\begin{document}\n'
+    #output_latex += '\\begin{table}\n\\centering\n'
+    output_latex += '\\begin{tabular}{c|ccc|ccc|ccc}\n'
+    output_latex += ' & \\multicolumn{3}{c}{Infantil}'
+    output_latex += ' & \\multicolumn{3}{c}{Juvenil}'
+    output_latex += ' & \\multicolumn{3}{c}{Pre-Profesional}\\\\\n'
+    output_latex += 'Área & ' + 'Escuela 1 & Escuela 2 & Escuela 3 & ' * 3
+    output_latex = output_latex[:-2] + '\\\\\n'
+    output_latex += '\\hline\n'
+    for area in clean_vars.keys():
+        line = f'{area} &'
+        for categoria in ['inf', 'juv', 'pro']:
+            for escuela in [1, 2, 3]:
+                line += f' {clean_vars[area][escuela][categoria]} &'
+        line = line[:-2] + '\\\\\n'
+        output_latex += line
+    output_latex += '\\end{tabular}\n'
+    #latex_string += f'\\caption{{Asignaciones para el área {area}}}\n'
+    #output_latex += '\\end{table}\n'
+    output_latex += '\\end{document}'
+    print(output_latex)

@@ -1,5 +1,6 @@
 from gurobipy import Model, GRB, quicksum, GurobiError
 from informacion.parametros import A, E, Q, C, K
+from informacion.parser import write_latex
 
 modelo = Model('AldeaMatematica')
 
@@ -8,15 +9,15 @@ modelo = Model('AldeaMatematica')
 # *************
 
 # x_mjie = x[area, categoria][alumno, escuela]
-# 1 si el alumno i de la categoria j del área m es asignado a la escuela e
+# 1 si el alumno i de la categoria j del área a es asignado a la escuela e
 # en caso contrario
 x = dict()
-for m in A.keys():
+for a in A.keys():
     for j in ['inf', 'juv', 'pro']:
-        # for i in A[m][j]:
-        # print(len(A[m][j]))
-        x[m, j] = modelo.addVars(
-                A[m], A[m][j], E, vtype=GRB.BINARY, name = 'x'
+        # for i in A[a][j]:
+        # print(len(A[a][j]))
+        x[a, j] = modelo.addVars(
+                A[a], A[a][j], E, vtype=GRB.BINARY, name = f'x{a}'
             )
 
 # *****************
@@ -24,11 +25,11 @@ for m in A.keys():
 # *****************
 
 # Todos los alumnos deben ser asignados
-for m in A.keys():
+for a in A.keys():
     for j in ['inf', 'juv', 'pro']:
-        for i in A[m][j]:
+        for i in A[a][j]:
             modelo.addConstr(
-                1 == quicksum(x[m, j][j, i, e] for e in E),
+                1 == quicksum(x[a, j][j, i, e] for e in E),
                 name = 'R1'
             )
 
@@ -38,11 +39,11 @@ for e in E:
         quicksum(
             quicksum(
                 quicksum(
-                    x[m, j][j, i, e] for i in A[m][j]
+                    x[a, j][j, i, e] for i in A[a][j]
                 )
                 for j in ['inf', 'juv', 'pro']
             )
-            for m in A.keys()
+            for a in A.keys()
         ) <= Q[e - 1],
         name = 'R2'
     )
@@ -54,16 +55,16 @@ for e in E:
             0.3 * quicksum(
                 quicksum(
                     quicksum(
-                        x[m, j_][j_, i, e] for i in A[m][j_]
+                        x[a, j_][j_, i, e] for i in A[a][j_]
                     )
                     for j_ in ['inf', 'juv', 'pro']
                 )
-                for m in A.keys()
+                for a in A.keys()
             ) <= quicksum(
                 quicksum(
-                    x[m, j][j, i, e] for i in A[m][j]
+                    x[a, j][j, i, e] for i in A[a][j]
                 )
-                for m in A.keys()
+                for a in A.keys()
             ),
             name = 'R3'
         )
@@ -75,27 +76,27 @@ for e in E:
             0.36 * quicksum(
                 quicksum(
                     quicksum(
-                        x[m, j_][j_, i, e] for i in A[m][j_]
+                        x[a, j_][j_, i, e] for i in A[a][j_]
                     )
                     for j_ in ['inf', 'juv', 'pro']
                 )
-                for m in A.keys()
+                for a in A.keys()
             ) >= quicksum(
                 quicksum(
-                    x[m, j][j, i, e] for i in A[m][j]
+                    x[a, j][j, i, e] for i in A[a][j]
                 )
-                for m in A.keys()
+                for a in A.keys()
             ),
             name = 'R4'
         )
 
 # Asignaciones imposibles
-for m in A.keys():
-    for e in K[m]:
+for a in A.keys():
+    for e in K[a]:
         modelo.addConstr(
             quicksum(
                 quicksum(
-                    x[m, j][j, i, e] for i in A[m][j]
+                    x[a, j][j, i, e] for i in A[a][j]
                 )
                 for j in ['inf', 'juv', 'pro']
             ) == 0,
@@ -111,17 +112,18 @@ modelo.setObjective(
         quicksum(
             quicksum(
                 quicksum(
-                    C[m][e] * x[m, j][j, i, e] for i in A[m][j]
+                    C[a][e] * x[a, j][j, i, e] for i in A[a][j]
                 )
                 for j in ['inf', 'juv', 'pro']
             )
-            for m in A.keys()
+            for a in A.keys()
         )
         for e in E
     )
 )
 
 modelo.optimize()
-for variable in modelo.getVars():
-    if variable.x:
-        print(variable.varName, variable.x)
+# for variable in modelo.getVars():
+#     if variable.x:
+#         print(variable.varName, variable.x)
+write_latex(modelo.getVars())
