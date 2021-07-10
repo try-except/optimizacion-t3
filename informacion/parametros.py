@@ -10,12 +10,28 @@ parser = Parser('informacion/datos.csv')
 # A: Areas
 A = dict()
 for k,v in parser.areas.items():
-    A[f'{k}_inf'] = [i for i in range(1, v[f'{k}_inf'] + 1)]
-    A[f'{k}_juv'] = [i for i in range(1, v[f'{k}_juv'] + 1)]
-    A[f'{k}_pro'] = [i for i in range(1, v[f'{k}_pro'] + 1)]
+    A[k] = dict()
+    # Infantiles
+    A[k]['inf'] = [
+        x for x in range(
+            1, 1 + parser.areas[k]['inf'] * parser.areas[k]['n_est'] // 100
+        )
+    ]
+    # Juveniles
+    A[k]['juv'] = [
+        x for x in range(
+            1, 1 + parser.areas[k]['juv'] * parser.areas[k]['n_est'] // 100
+        )
+    ]
+    # Preprofesionales
+    A[k]['pro'] = [
+        x for x in range(
+            1, 1 + parser.areas[k]['pro'] * parser.areas[k]['n_est'] // 100
+        )
+    ]
 
-#B: Escuelas
-B = list(parser.escuelas.keys())
+#E: Escuelas
+E = list(parser.escuelas.keys())
 
 #Q: Capacidades
 Q = list(parser.escuelas.values())

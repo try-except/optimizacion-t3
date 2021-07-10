@@ -1,68 +1,127 @@
 from gurobipy import Model, GRB, quicksum, GurobiError
-from informacion.parametros import A, B, Q, C, K
+from informacion.parametros import A, E, Q, C, K
 
-
-#print(A)
-#print(B)
 modelo = Model('AldeaMatematica')
 
-# x_kab: x[subarea][numero, escuela]
-# 1 si el alumno a del subarea k es asignado
-# a la escuela b
-# 0 en caso contrario
-x = {k: modelo.addVars(A[k], B, vtype=GRB.BINARY, name='x')     for k in A.keys()}
-print('C =', C)
+# *************
+# * VARIABLES *
+# *************
+
+# x_mjie = x[area, categoria][alumno, escuela]
+# 1 si el alumno i de la categoria j del área m es asignado a la escuela e
+# en caso contrario
+x = dict()
+for m in A.keys():
+    for j in ['inf', 'juv', 'pro']:
+        # for i in A[m][j]:
+        # print(len(A[m][j]))
+        x[m, j] = modelo.addVars(
+                A[m], A[m][j], E, vtype=GRB.BINARY, name = 'x'
+            )
+
+# *****************
+# * RESTRICCIONES *
+# *****************
 
 # Todos los alumnos deben ser asignados
-modelo.addConstrs(
-    (1 == quicksum(quicksum(x[k][a, b] for b in B) for a in A[k])
-                                                                for k in A.keys()
-    ),
-    name = 'R1'
-)
-# Restriccion de diversidad 1 #CREO QUE FALLAN LAS DE DIVERSIDAD !!!!
-modelo.addConstrs(
-    (quicksum(quicksum(x[k][a, b] for a in A[k]) for k in A.keys()) * 0.3 <= \
-    quicksum(x[k][a, b] for a in A[k])                          for k in A.keys()
-                                                                for b in B
-    ),
-    name = 'R2'
-)
-# Restriccion de diversidad 2
-modelo.addConstrs(
-    (quicksum(quicksum(x[k][a, b] for a in A[k]) for k in A.keys()) * 0.36 >= \
-    quicksum(x[k][a, b] for a in A[k])                          for k in A.keys()
-                                                                for b in B
-    ),
-    name = 'R3'
-)
+for m in A.keys():
+    for j in ['inf', 'juv', 'pro']:
+        for i in A[m][j]:
+            modelo.addConstr(
+                1 == quicksum(x[m, j][j, i, e] for e in E),
+                name = 'R1'
+            )
+
 # Restriccion de capacidad
-modelo.addConstrs(
-    (quicksum(quicksum(x[k][a, b] for a in A[k]) for k in A.keys()) <= Q[b - 1]
-                                                                for b in B
-    ),
-    name = 'R4'
-)
+for e in E:
+    modelo.addConstr(
+        quicksum(
+            quicksum(
+                quicksum(
+                    x[m, j][j, i, e] for i in A[m][j]
+                )
+                for j in ['inf', 'juv', 'pro']
+            )
+            for m in A.keys()
+        ) <= Q[e - 1],
+        name = 'R2'
+    )
+
+# Restriccion inferior de diversidad
+for e in E:
+    for j in ['inf', 'juv', 'pro']:
+        modelo.addConstr(
+            0.3 * quicksum(
+                quicksum(
+                    quicksum(
+                        x[m, j_][j_, i, e] for i in A[m][j_]
+                    )
+                    for j_ in ['inf', 'juv', 'pro']
+                )
+                for m in A.keys()
+            ) <= quicksum(
+                quicksum(
+                    x[m, j][j, i, e] for i in A[m][j]
+                )
+                for m in A.keys()
+            ),
+            name = 'R3'
+        )
+
+# Restriccion superior de diversidad
+for e in E:
+    for j in ['inf', 'juv', 'pro']:
+        modelo.addConstr(
+            0.36 * quicksum(
+                quicksum(
+                    quicksum(
+                        x[m, j_][j_, i, e] for i in A[m][j_]
+                    )
+                    for j_ in ['inf', 'juv', 'pro']
+                )
+                for m in A.keys()
+            ) >= quicksum(
+                quicksum(
+                    x[m, j][j, i, e] for i in A[m][j]
+                )
+                for m in A.keys()
+            ),
+            name = 'R4'
+        )
+
 # Asignaciones imposibles
-modelo.addConstrs(
-    (0 == quicksum(quicksum(x[k][a, b] for a in A[k]) for b in K.get(int(k[0]), list()))
-                                                    for k in A.keys()
-    ),
-    name = 'R5'
-)
+for m in A.keys():
+    for e in K[m]:
+        modelo.addConstr(
+            quicksum(
+                quicksum(
+                    x[m, j][j, i, e] for i in A[m][j]
+                )
+                for j in ['inf', 'juv', 'pro']
+            ) == 0,
+            name = 'R5'
+        )
 
-
+# ********************
+# * FUNCION OBJETIVO *
+# ********************
+#print(C)
 modelo.setObjective(
     quicksum(
         quicksum(
             quicksum(
-                C[int(k[0])][b] * x[k][a, b] for a in A[k]
+                quicksum(
+                    C[m][e] * x[m, j][j, i, e] for i in A[m][j]
+                )
+                for j in ['inf', 'juv', 'pro']
             )
-            for b in B
+            for m in A.keys()
         )
-        for k in A.keys()
-    ),
-    GRB.MINIMIZE
+        for e in E
+    )
 )
 
 modelo.optimize()
+for variable in modelo.getVars():
+    if variable.x:
+        print(variable.varName, variable.x)
