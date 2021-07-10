@@ -41,7 +41,7 @@ class Parser:
         #dejar los resultados en un atributo para poder llevarlos a parametros
         pass #cambiar los costos para las zonas a 'null'
 
-def write_latex(variables : list, objetivo : float) -> str:
+def write_latex(modelo) -> str:
     '''
     Recibe el estado final de las variables y el valor objetivo, construye
     una tabla en LaTeX a partir de los datos recibidos
@@ -58,7 +58,7 @@ def write_latex(variables : list, objetivo : float) -> str:
         }
         for j in range(1, 7)
     }
-    for var in variables:
+    for var in modelo.getVars():
         if not var.x: continue # Solo consideramos las asignaciones hechas.
         area = int(var.varName[1])
         cat, alumno, escuela = var.varName[3:-1].split(',')
@@ -74,7 +74,7 @@ def write_latex(variables : list, objetivo : float) -> str:
     output_latex += ' & \\multicolumn{3}{c}{Infantil}'
     output_latex += ' & \\multicolumn{3}{c}{Juvenil}'
     output_latex += ' & \\multicolumn{3}{c}{Pre-Profesional}\\\\\n'
-    output_latex += 'Área' + ' & Escuela 1 & Escuela 2 & Escuela 3 * 3
+    output_latex += 'Área' + ' & Escuela 1 & Escuela 2 & Escuela 3' * 3
     output_latex += '\\\\\n\\hline\n'
     for area in clean_vars.keys():
         line = f'{area}'
@@ -105,7 +105,18 @@ def write_latex(variables : list, objetivo : float) -> str:
             output_latex += f'& {suma / total_asignados * 100}'[:8] + '\% '
     output_latex += '\\\\\n\hline\n\hline\n'
     #valor funcion objetivo
-    costo_optimo = f'{int(objetivo // 1000)}\\,{int(objetivo % 1000)}'
-    output_latex += f'\\multicolumn{{10}}{{c}}{{Costo total óptimo: {costo_optimo}}}'
+    miles = int(modelo.objVal // 1000)
+    centenas = int(modelo.objVal % 1000)
+    if centenas < 100:
+        centenas = str(centenas)
+        centenas = '0' * ( 3 - len(centenas)) + centenas
+    costo_optimo = f'{miles}\\,{centenas}'
+    output_latex += f'\\multicolumn{{10}}{{c}}{{Costo total óptimo: \${costo_optimo}}}'
     output_latex += '\n\\end{tabular}\n\\end{document}'
-    print(output_latex) #cambiar output a un archivo .tex
+    #print(output_latex) #cambiar output a un archivo .tex
+    info_modelo = modelo.ModelName.split(' ')
+    nombre_output = info_modelo[0].lower() + '_' + info_modelo[1][1]
+    if len(info_modelo) > 2:
+        nombre_output += '_' + info_modelo[-1]
+    with open(f'output_files/{nombre_output}.tex', 'w', encoding='utf-8') as fh:
+        fh.write(output_latex)
